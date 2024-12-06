@@ -322,7 +322,15 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      GiantCrab_0: -3122768391253127916
+      GiantCrab_1: 3752714792344857856
+      GiantCrab_2: -1272544982716709278
+      GiantCrab_3: -790226026866052349
+      GiantCrab_4: -387638344042334973
+      GiantCrab_5: -6076602813397485030
+      GiantCrab_6: 5219829082436363573
+      GiantCrab_7: 4641926796107741993
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

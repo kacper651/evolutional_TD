@@ -272,7 +272,13 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      LimeWell_0: 2768595609323794671
+      LimeWell_1: -7892352330905168585
+      LimeWell_2: 8825104514283899895
+      LimeWell_3: 7081077616819306409
+      LimeWell_4: 8728595305417038298
+      LimeWell_5: 2478985311063633266
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

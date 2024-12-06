@@ -147,7 +147,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      LimeTaverns_0: 754911732637788356
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

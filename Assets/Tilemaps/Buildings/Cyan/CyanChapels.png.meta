@@ -147,7 +147,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      CyanChapels_0: -4847306819430574755
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

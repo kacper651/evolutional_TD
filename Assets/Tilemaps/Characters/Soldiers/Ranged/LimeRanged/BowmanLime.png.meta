@@ -872,7 +872,37 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      BowmanLime_0: -8279185905841022901
+      BowmanLime_1: 8475666830423088587
+      BowmanLime_10: 1477606868590489392
+      BowmanLime_11: -1470812747889939996
+      BowmanLime_12: -6291073216796396586
+      BowmanLime_13: 6762634980383253778
+      BowmanLime_14: 7812090835524030803
+      BowmanLime_15: 353219705067750448
+      BowmanLime_16: -7443761851998066437
+      BowmanLime_17: 7515622826369729019
+      BowmanLime_18: 7640707151506957021
+      BowmanLime_19: 7489146884880323885
+      BowmanLime_2: -496219117748126321
+      BowmanLime_20: -8826290446683197328
+      BowmanLime_21: -468628291490440171
+      BowmanLime_22: 914570722912692777
+      BowmanLime_23: -2856653321930482765
+      BowmanLime_24: -2339627065134422
+      BowmanLime_25: -2011634923483137982
+      BowmanLime_26: -3752779055519093408
+      BowmanLime_27: 5423879906068512117
+      BowmanLime_28: 4391063069157161993
+      BowmanLime_29: -7917266151539923199
+      BowmanLime_3: 4582780768079815155
+      BowmanLime_4: -5815202440771921668
+      BowmanLime_5: 7292416466522032951
+      BowmanLime_6: 2807631645564240146
+      BowmanLime_7: -7868665473774319859
+      BowmanLime_8: -5482627120894674850
+      BowmanLime_9: -7661190449595518789
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

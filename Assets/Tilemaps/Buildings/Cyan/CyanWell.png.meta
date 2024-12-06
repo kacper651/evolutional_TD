@@ -272,7 +272,13 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      CyanWell_0: -3688724359199872758
+      CyanWell_1: -5162498748074272312
+      CyanWell_2: 2310776250787358414
+      CyanWell_3: 2761193653574818048
+      CyanWell_4: 6686888354612817077
+      CyanWell_5: -5704428798882859815
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

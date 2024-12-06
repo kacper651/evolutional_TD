@@ -147,7 +147,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      RedHouses_0: 3119723640488987476
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

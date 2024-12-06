@@ -147,7 +147,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      LimeHouses_0: -9179270656629518930
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

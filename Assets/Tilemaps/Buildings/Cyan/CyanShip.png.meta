@@ -197,7 +197,10 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      CyanShip_0: -5458336566270552755
+      CyanShip_1: -1047053157083575703
+      CyanShip_2: -7823573109167105557
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

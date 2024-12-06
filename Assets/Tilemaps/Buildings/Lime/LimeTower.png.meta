@@ -147,7 +147,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      LimeTower_0: 3512666851629300336
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

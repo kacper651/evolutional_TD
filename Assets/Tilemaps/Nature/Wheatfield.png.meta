@@ -222,7 +222,11 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      Wheatfield_0: -9158380238242527104
+      Wheatfield_1: 8838171944633918809
+      Wheatfield_2: 3728704138481391162
+      Wheatfield_3: 784580751440178469
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

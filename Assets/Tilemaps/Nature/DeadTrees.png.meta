@@ -222,7 +222,11 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      DeadTrees_0: -1493940300469173178
+      DeadTrees_1: -224013723092173836
+      DeadTrees_2: 2107715385152801625
+      DeadTrees_3: -8521387426085454093
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

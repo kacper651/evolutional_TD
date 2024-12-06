@@ -322,7 +322,15 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      Cactus_0: 7873444928579934181
+      Cactus_1: 4438351552130452648
+      Cactus_2: -8484647995636279456
+      Cactus_3: 1464250414856482592
+      Cactus_4: -4471450805393876877
+      Cactus_5: -6142298138049817622
+      Cactus_6: -6977608548097279171
+      Cactus_7: 1742208062423336634
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

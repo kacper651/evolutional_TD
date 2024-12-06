@@ -147,7 +147,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      DeadGrass_0: 282646467927124392
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

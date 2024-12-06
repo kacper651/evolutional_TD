@@ -147,7 +147,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      CyanTower_0: 6729127302359261941
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -147,7 +147,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      PurpleChapels_0: -2579116834387622030
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
