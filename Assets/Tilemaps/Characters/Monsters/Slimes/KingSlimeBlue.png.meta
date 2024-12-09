@@ -722,7 +722,31 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      KingSlimeBlue_0: 1455711069514193514
+      KingSlimeBlue_1: 469004595806965673
+      KingSlimeBlue_10: 4498173462798079509
+      KingSlimeBlue_11: -6583950128183590110
+      KingSlimeBlue_12: -969102783091980571
+      KingSlimeBlue_13: -9024549688971681081
+      KingSlimeBlue_14: -8360059622926369910
+      KingSlimeBlue_15: 8052766654776506120
+      KingSlimeBlue_16: 8284434706382454296
+      KingSlimeBlue_17: -5526387310195972465
+      KingSlimeBlue_18: 8702546435082963924
+      KingSlimeBlue_19: -5775146484695519263
+      KingSlimeBlue_2: 7491115806265240124
+      KingSlimeBlue_20: 1290220173250378386
+      KingSlimeBlue_21: 1298908499609670369
+      KingSlimeBlue_22: 2044307819144822109
+      KingSlimeBlue_23: -7253623568972396510
+      KingSlimeBlue_3: 7967513229115599039
+      KingSlimeBlue_4: -4920463104830586147
+      KingSlimeBlue_5: -9089008302901774780
+      KingSlimeBlue_6: -2044195312401673826
+      KingSlimeBlue_7: 2540447973625302630
+      KingSlimeBlue_8: 4786322467312383063
+      KingSlimeBlue_9: 5339711130836586777
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

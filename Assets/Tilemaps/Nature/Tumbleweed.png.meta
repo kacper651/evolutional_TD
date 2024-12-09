@@ -172,7 +172,9 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      Tumbleweed_0: -6658293862702925550
+      Tumbleweed_1: 2747496919081450103
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

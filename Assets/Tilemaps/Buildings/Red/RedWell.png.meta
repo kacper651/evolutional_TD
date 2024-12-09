@@ -272,7 +272,13 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      RedWell_0: 3370088423488056663
+      RedWell_1: 8858360087929289375
+      RedWell_2: -3565792226504441959
+      RedWell_3: 8885371144233688693
+      RedWell_4: -894350517615270131
+      RedWell_5: -1202038008003518640
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

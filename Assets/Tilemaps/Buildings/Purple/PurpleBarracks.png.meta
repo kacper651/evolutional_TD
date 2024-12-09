@@ -147,7 +147,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      PurpleBarracks_0: 181435121959399926
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

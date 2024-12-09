@@ -147,7 +147,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      LimeChapels_0: 2752071585383807354
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

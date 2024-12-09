@@ -147,7 +147,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      RedTaverns_0: -3253151613307413229
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

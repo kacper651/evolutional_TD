@@ -147,7 +147,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      RedChapels_0: -3924907854910392122
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

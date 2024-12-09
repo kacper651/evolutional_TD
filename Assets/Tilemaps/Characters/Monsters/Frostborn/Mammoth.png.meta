@@ -547,7 +547,24 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      Mammoth_0: 6598829705090035714
+      Mammoth_1: -7164885618608326261
+      Mammoth_10: 526494502137050293
+      Mammoth_11: -1065856544837166911
+      Mammoth_12: 6210329515321126626
+      Mammoth_13: 5180967182803840422
+      Mammoth_14: -3184593752771412514
+      Mammoth_15: 8341769715502386959
+      Mammoth_16: 5932014629615521961
+      Mammoth_2: -3169542317566291086
+      Mammoth_3: 8579345529094369758
+      Mammoth_4: 4391604724606060966
+      Mammoth_5: -1129637615917428308
+      Mammoth_6: -2028041942904429195
+      Mammoth_7: 3996560333352365688
+      Mammoth_8: 5579518296540916483
+      Mammoth_9: 4444133267702136394
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

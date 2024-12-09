@@ -147,7 +147,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      Cliff-Water_0: 127427364895236717
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

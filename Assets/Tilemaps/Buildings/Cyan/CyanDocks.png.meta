@@ -172,7 +172,9 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      CyanDocks_0: -8212712048035925098
+      CyanDocks_1: 4311960888841360245
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

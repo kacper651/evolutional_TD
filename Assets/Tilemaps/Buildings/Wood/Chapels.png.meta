@@ -147,7 +147,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      Chapels_0: 7236604235761787574
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

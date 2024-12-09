@@ -197,7 +197,10 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      RedShip_0: -7042460301487312983
+      RedShip_1: -951478767947368394
+      RedShip_2: -8079899538449750957
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -272,7 +272,13 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      PurpleWell_0: 5494750074347899572
+      PurpleWell_1: 7958823898277668428
+      PurpleWell_2: 6517057427797667327
+      PurpleWell_3: -4080251592517819637
+      PurpleWell_4: 4464550597140123584
+      PurpleWell_5: -781338000900464436
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
