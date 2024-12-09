@@ -81,11 +81,26 @@ namespace EvolutionaryAlgorithmUtils
             {
                 for (int j = 0; j < map.GetLength(1); j++)
                 {
-                    string description = EvolutionaryAlgorithmUtils.MapUtils.GetTileDescription(map[i, j]);
+                    string description = GetTileDescription(map[i, j]);
                     Console.Write(description.PadRight(20));
                 }
                 Console.WriteLine();
             }
+        }
+
+        public static (int, int) FindValuePosition(int[,] matrix, int value)
+        {
+            for (int y = 0; y < matrix.GetLength(0); y++)
+            {
+                for (int x = 0; x < matrix.GetLength(1); x++)
+                {
+                    if (matrix[y, x] == value)
+                    {
+                        return (y, x);
+                    }
+                }
+            }
+            throw new InvalidOperationException("Value not found in the matrix.");
         }
 
     }
