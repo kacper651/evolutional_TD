@@ -7,15 +7,8 @@ using Random = System.Random;
 using EvolutionaryAlgorithmUtils;
 
 /*
- * Pytanie: jak puszczaæ ten skrypt z poziomu UNITY, ¿eby wyœwietla³o siê wszystko ³adnie w konsoli?
- *          Bo jak puszczam to tak normalnie tutaj, to mi zaczyna debugowaæ i w ogóle nie wyskakuje terminal przez to,
- *          ¿e to przez UNITY jest, wiêc utworzy³em sobie do tego oddzielny projekt na C# desktop app ¿eby to testowaæ jak g³upek xdd
- *          (dzia³a tam wszystko jak coœ oczywiœcie)          
-*/
-
-/*
  * TODO: 
- *  -   fitness function - IN PROGRESS
+ *  -   dodaæ prawdopodobieñstwa wymiany do crossoveru i mutacji na podstawie fitnessMatrix - random weighted number generator needed
  *  -   initialization: coœ bardziej sensownego ni¿ losowa - nie musi byæ greedy, to po prostu przysz³o mi pierwsze do g³owy
  *  -   repair: parê ró¿nych metod
  *  -   automatyzacja pobierania parametrów, ¿eby nie by³y pisane z palca tak jak teraz
@@ -351,20 +344,41 @@ public class EvolutionaryAlgorithm
     {
         double[,] fitnessMatrix = new double[MapHeight, MapWidth];
         double totalFitness = 0.0;
-
+        //Console.WriteLine("\nFitness calculation (matrix size - {0})\n", MapWidth);
         for (int y = 0; y < MapHeight; y++)
         {
             for (int x = 0; x < MapWidth; x++)
             {
-                int[,] region = MapUtils.ExtractKernelRegion(matrix, x, y, 5);
+                int[,] region = MapUtils.ExtractKernelRegion(matrix, x, y, 3);
 
                 double regionFitness = CalculateRegionFitness(region);
                 fitnessMatrix[y, x] = regionFitness;
                 totalFitness += regionFitness;
             }
         }
-        totalFitness += EvaluateTileRatios(matrix);
-        totalFitness -= PenalizeAvailableRegionsOnTheBorder(matrix, 5);
+
+        //Console.WriteLine("Map:");
+        //MapUtils.PrintMap(matrix);
+        //Console.WriteLine();
+        //double sum = fitnessMatrix.Cast<double>().Sum();
+        //Console.WriteLine("Fitness matrix sum: {0}", sum);
+        //for (int i = 0; i < fitnessMatrix.GetLength(0); i++)
+        //{
+        //    for (int j = 0; j < fitnessMatrix.GetLength(1); j++)
+        //    {
+        //        //string description = GetTileDescription(map[i, j]);
+        //        string description = fitnessMatrix[i, j].ToString();
+        //        Console.Write(description.PadRight(5));
+        //    }
+        //    Console.WriteLine();
+        //}
+
+        //totalFitness += EvaluateTileRatios(matrix);
+        var (tileRatioPromotionFitness, availableTilesOnBorder) = EvaluateTileRatios(matrix);
+        totalFitness += tileRatioPromotionFitness;
+        totalFitness -= PenalizeSoloTiles(matrix);
+        totalFitness -= PenalizeAvailableRegionsOnTheBorder(matrix, availableTilesOnBorder, 1);
+        totalFitness -= PenalizeTooManyInOutPaths(matrix);
         return totalFitness;
     }
 
@@ -373,8 +387,8 @@ public class EvolutionaryAlgorithm
         double regionFitness = 0.0;
 
         regionFitness += EvaluatePathConnectivity(region);    // evaluate path connectivity
-        regionFitness += EvaluateRegionConnectivity(region);  // evaluate region 'chunks'
-        regionFitness -= PenalizeSoloTiles(region);           // penalize single tiles
+        regionFitness += PromoteL_Shape(region);              // evaluate region 'chunks'
+        //regionFitness -= PenalizeSoloTiles(region);           // penalize single tiles
 
         return regionFitness;
     }
@@ -392,39 +406,17 @@ public class EvolutionaryAlgorithm
                 }
             }
         }
+        //Console.WriteLine("EvaluatePathConn\tadded score:\t{0}", connectedPaths.Count(x => x));
         return connectedPaths.Count(x => x);
     }
 
-    private double EvaluateRegionConnectivity(int[,] region)
+    private double PromoteL_Shape(int[,] region)
     {
-
-        return 0.0;
-    }
-
-    private double PenalizeSoloTiles(int[,] region)
-    {
-        double fitnessPenalty = 0.0;
-
-        for (int y = 0; y < region.GetLength(0); y++)
-        {
-            for (int x = 0; x < region.GetLength(1); x++)
-            {
-                if (region[y, x] == MapUtils.PATH_TILE)
-                {
-                    int value = region[y, x];
-                    if (value != -1 && MapUtils.IsSoloCell(region, x, y, value))
-                    {
-                        fitnessPenalty += 1.0;
-                    }
-                }
-            }
-        }
-
-        return fitnessPenalty;
+        return MapUtils.ContainsLShape(region) ? MapUtils.FOUND_L_SHAPE_PROMOTION_WEIGHT : MapUtils.NO_L_SHAPE_PENALTY_WEIGHT;
     }
 
     // weights for each ratio can be adjusted
-    private double EvaluateTileRatios(int[,] map)
+    private (double, int) EvaluateTileRatios(int[,] map)    // 10 = perfect, even ratio
     {
         int totalTiles = MapWidth * MapHeight;
         int pathTilesCount = 0;
@@ -457,7 +449,10 @@ public class EvolutionaryAlgorithm
         double availableToTotalRatio = (double)availableGroundTilesCount / totalTiles;
         double unavailableToTotalRatio = (double)(unavailableGroundTilesCount + waterTilesCount) / totalTiles;
 
-        return pathToTotalRatio + availableToTotalRatio + unavailableToTotalRatio;
+        double combinedRatio = MapUtils.WeighTileRatios(pathToTotalRatio, availableToTotalRatio, unavailableToTotalRatio);
+        //Console.WriteLine("EvaluateTileRatios\tadded score:\t{0}", combinedRatio);
+
+        return (combinedRatio, availableGroundTilesCount);
     }
 
     // maybe in regards to available tiles ratio?  
@@ -465,40 +460,123 @@ public class EvolutionaryAlgorithm
     // we can have 100 on the border, if there are 500 in general, but
     // if 450 out of 500 are on the border, it's an issue
     // i can get the total number of available tiles from EvaluateTileRatios method
-    private double PenalizeAvailableRegionsOnTheBorder(int[,] matrix, int kernelSize)
+    private double PenalizeAvailableRegionsOnTheBorder(int[,] matrix, int totalAvailableCount, int borderSize) // penalty=10 - worst case, all available tiles on the border
     {
-        int padding = kernelSize / 2;
         int pathTilesCount = 0;
 
-        // top border
-        for (int x = padding; x < MapWidth - padding; x += kernelSize)
+        // top border (+ corners)
+        for (int x = 0; x < MapWidth; x++)
         {
-            var kernel = MapUtils.ExtractKernelRegion(matrix, x, padding, kernelSize);
-            pathTilesCount += MapUtils.CountTilesOfTypeInRegion(kernel, MapUtils.PATH_TILE);
+            for (int y = 0; y < borderSize; y++)
+            {
+                if (matrix[y, x] == MapUtils.AVAILABLE_GROUND_TILE)
+                {
+                    pathTilesCount++;
+                }
+            }
         }
 
-        // bottom border
-        for (int x = padding; x < MapWidth - padding; x += kernelSize)
+        // bottom border (+ corners)
+        for (int x = 0; x < MapWidth; x++)
         {
-            var kernel = MapUtils.ExtractKernelRegion(matrix, x, MapHeight - padding, kernelSize);
-            pathTilesCount += MapUtils.CountTilesOfTypeInRegion(kernel, MapUtils.PATH_TILE);
+            for (int y = MapHeight - borderSize; y < MapHeight; y++)
+            {
+                if (matrix[y, x] == MapUtils.AVAILABLE_GROUND_TILE)
+                {
+                    pathTilesCount++;
+                }
+            }
         }
 
         // left border
-        for (int y = padding; y < MapHeight - padding; y += kernelSize)
+        for (int x = 0; x < borderSize; x++)
         {
-            var kernel = MapUtils.ExtractKernelRegion(matrix, padding, y, kernelSize);
-            pathTilesCount += MapUtils.CountTilesOfTypeInRegion(kernel, MapUtils.PATH_TILE);
+            for (int y = borderSize; y < MapHeight - borderSize; y++)
+            {
+                if (matrix[y, x] == MapUtils.AVAILABLE_GROUND_TILE)
+                {
+                    pathTilesCount++;
+                }
+            }
         }
 
         // right border
-        for (int y = padding; y < MapHeight - padding; y += kernelSize)
+        for (int x = MapWidth - borderSize; x < MapWidth; x++)
         {
-            var kernel = MapUtils.ExtractKernelRegion(matrix, MapWidth - padding, y, kernelSize);
-            pathTilesCount += MapUtils.CountTilesOfTypeInRegion(kernel, MapUtils.PATH_TILE);
+            for (int y = borderSize; y < MapHeight - borderSize; y++)
+            {
+                if (matrix[y, x] == MapUtils.AVAILABLE_GROUND_TILE)
+                {
+                    pathTilesCount++;
+                }
+            }
         }
 
-        return pathTilesCount;
+        var ratio = (double)pathTilesCount / totalAvailableCount * MapUtils.AVAILABLE_ON_BORDER_SHIFT_PENALTY_WEIGHT;
+        //Console.WriteLine("PenalizeAvRegOnBor\tpenalty score:\t{0}", ratio);
+        return ratio;
+    }
+
+    private double PenalizeSoloTiles(int[,] region)
+    {
+        double fitnessPenalty = 0.0;
+
+        for (int y = 0; y < region.GetLength(0); y++)
+        {
+            for (int x = 0; x < region.GetLength(1); x++)
+            {
+                int value = region[y, x];
+                if (value != -1 && MapUtils.IsSoloCell(region, x, y, value))
+                {
+                    fitnessPenalty += 1.0;
+                }
+            }
+        }
+        //Console.WriteLine("PenalizeSoloTiles\tpenalty score:\t{0}", fitnessPenalty - 2.0);
+        return fitnessPenalty;
+    }
+
+    private double PenalizeTooManyInOutPaths(int[,] matrix)
+    {
+        double pathsOnBorder = 0.0;
+
+        // top border (+ corners)
+        for (int x = 0; x < MapWidth; x++)
+        {
+            if (matrix[0, x] == MapUtils.PATH_TILE)
+            {
+                pathsOnBorder += 1.0;
+            }
+        }
+
+        // bottom border (+ corners)
+        for (int x = 0; x < MapWidth; x++)
+        {
+            if (matrix[MapHeight - 1, x] == MapUtils.PATH_TILE)
+            {
+                pathsOnBorder += 1.0;
+            }
+        }
+
+        // left border
+        for (int y = 1; y < MapHeight - 1; y++)
+        {
+            if (matrix[y, 0] == MapUtils.PATH_TILE)
+            {
+                pathsOnBorder += 1.0;
+            }
+        }
+
+        // right border
+        for (int y = 1; y < MapHeight - 1; y++)
+        {
+            if (matrix[y, MapWidth - 1] == MapUtils.PATH_TILE)
+            {
+                pathsOnBorder += 1.0;
+            }
+        }
+        //Console.WriteLine("PenalizeSoloTiles\tpenalty score:\t{0}", pathsOnBorder-2.0);
+        return (pathsOnBorder - 2.0);
     }
 
     private List<(int[,], double)> EvaluatePopulation(List<int[,]> population)
@@ -578,7 +656,10 @@ public class EvolutionaryAlgorithm
             var BestIndividual = EvaluatedPopulation.OrderByDescending(x => x.Item2).First();
             BestIndividualValues.Add(BestIndividual.Item1);
             BestFitnessValues.Add(BestIndividual.Item2);
-            Console.WriteLine("Generation: {0}, Best Fitness: {1}", generation, BestIndividual.Item2);
+            //Console.WriteLine("\n------------------------------------");
+            Console.WriteLine("Generation: {0}, Best Fitness: {1:F5},   s({2})", generation, BestIndividual.Item2, sw.Elapsed.Seconds);
+            //Console.WriteLine("------------------------------------\n");
+
             if (sw.Elapsed.TotalSeconds >= TimeLimit)
             {
                 Console.WriteLine("Time limit reached. Stopping the algorithm.");
@@ -587,20 +668,22 @@ public class EvolutionaryAlgorithm
             Population = CreatingNewGenerationStrategies[CreatingNewGenerationMethod](EvaluatedPopulation);
         }
         sw.Stop();
-        Console.WriteLine("Elapsed={0:F3} seconds\n", sw.Elapsed.TotalSeconds);
+        Console.WriteLine("Elapsed={0:F5} seconds", sw.Elapsed.TotalSeconds);
+        Console.WriteLine("Best fitness: {0:F5}", BestFitnessValues.Last());
+        Console.WriteLine("Worst fitness: {0:F5}", BestFitnessValues.First());
         MapUtils.PrintMap(Population.Last());
     }
 
     public static (MapParameters, StopConditionParameters, AlgorithmParameters, MethodSelectionParameters) GetParameters()
     {
         //  whatever as default, it's just a starting point
-        return (new MapParameters { Width = 20, Height = 20 },
+        return (new MapParameters { Width = 10, Height = 10 },
                 new StopConditionParameters { MaxGenerations = 999999, TimeLimit = 60 },
-                new AlgorithmParameters { PopulationSize = 100, MutationRate = 0.1, TournamentSize = 2 },
+                new AlgorithmParameters { PopulationSize = 500, MutationRate = 0.2, TournamentSize = 2 },
                 new MethodSelectionParameters
                 {
                     InitializationMethod = InitializationMethodType.Random,
-                    SelectionMethod = SelectionMethodType.Roulette,
+                    SelectionMethod = SelectionMethodType.Tournament,
                     CrossoverMethod = CrossoverMethodType.CycleCrossover,
                     MutationMethod = MutationMethodType.Inverse,
                     RepairMethod = RepairMethodType.Whatever1,
