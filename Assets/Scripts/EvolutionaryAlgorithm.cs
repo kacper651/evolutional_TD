@@ -8,8 +8,6 @@ using EvolutionaryAlgorithmUtils;
 
 /*
  * TODO: 
- *  -   dodaæ prawdopodobieñstwa wymiany do crossoveru i mutacji na podstawie fitnessMatrix - random weighted number generator needed
- *  -   initialization: coœ bardziej sensownego ni¿ losowa - nie musi byæ greedy, to po prostu przysz³o mi pierwsze do g³owy
  *  -   repair: parê ró¿nych metod
  *  -   automatyzacja pobierania parametrów, ¿eby nie by³y pisane z palca tak jak teraz
  *  -   automatyzacja puszczania eksperymentów 
@@ -17,21 +15,18 @@ using EvolutionaryAlgorithmUtils;
  */
 
 /*
-    thought: maybe fitness should return both the matrix and the score.
-    I could use the knowledge of the matrix to modify probabilities for regions
-        that could be improved - for example:
-    the bad regions would be more likely to get mutated or changed during crossovers
-*/
+    Oceny s¹ mega nieskalibrowane - OrderedCrossoverWeighted promuje œcie¿ki tak bardzo, ¿e prawie ca³a mapa staje siê œcie¿k¹, Randomowe mutacje w zasadzie tak samo
+ */
 
 public class EvolutionaryAlgorithm
 {
     private Random random;
     private readonly Dictionary<InitializationMethodType, Func<List<int[,]>>> InitializationStrategies;
-    private readonly Dictionary<SelectionMethodType, Func<List<(int[,], double)>, ((int[,], double), (int[,], double))>> SelectionStrategies;
-    private readonly Dictionary<CrossoverMethodType, Func<int[,], int[,], int[,]>> CrossoverStrategies;
+    private readonly Dictionary<SelectionMethodType, Func<List<(int[,], double, double[,])>, ((int[,], double, double[,]), (int[,], double, double[,]))>> SelectionStrategies;
+    private readonly Dictionary<CrossoverMethodType, Func<(int[,] map, double[,] fitnessMatrix), (int[,] map, double[,] fitnessMatrix), int[,]>> CrossoverStrategies;
     private readonly Dictionary<MutationMethodType, Func<int[,], int[,]>> MutationStrategies;
     private readonly Dictionary<RepairMethodType, Func<int[,], int[,]>> RepairStrategies;
-    private readonly Dictionary<CreatingNewGenerationType, Func<List<(int[,], double)>, List<int[,]>>> CreatingNewGenerationStrategies;
+    private readonly Dictionary<CreatingNewGenerationType, Func<List<(int[,], double, double[,])>, List<int[,]>>> CreatingNewGenerationStrategies;
 
     private List<int[,]> Population = new();
     private List<double> BestFitnessValues = new();
@@ -39,6 +34,7 @@ public class EvolutionaryAlgorithm
 
     private int MapWidth;
     private int MapHeight;
+    private int KernelSize;
 
     private int MaxGenerations;
     private int TimeLimit;
@@ -46,6 +42,7 @@ public class EvolutionaryAlgorithm
     private int PopulationSize;
     private int TournamentSize;
     private double MutationRate;
+    private double ElitesPercentage;
 
     private InitializationMethodType InitializationMethod;
     private SelectionMethodType SelectionMethod;
@@ -62,6 +59,7 @@ public class EvolutionaryAlgorithm
         random = new Random();
         MapWidth = mapParams.Width;
         MapHeight = mapParams.Height;
+        KernelSize = mapParams.KernelSize;
 
         MaxGenerations = stopParams.MaxGenerations;
         TimeLimit = stopParams.TimeLimit;
@@ -69,6 +67,7 @@ public class EvolutionaryAlgorithm
         PopulationSize = algParams.PopulationSize;
         MutationRate = algParams.MutationRate;
         TournamentSize = algParams.TournamentSize;
+        ElitesPercentage = algParams.ElitesPercentage;
 
         InitializationMethod = metParams.InitializationMethod;
         SelectionMethod = metParams.SelectionMethod;
@@ -82,27 +81,29 @@ public class EvolutionaryAlgorithm
             { InitializationMethodType.Random, InitializeRandom },
             { InitializationMethodType.Greedy, InitializeGreedy }
         };
-        SelectionStrategies = new Dictionary<SelectionMethodType, Func<List<(int[,], double)>, ((int[,], double), (int[,], double))>>()
+        SelectionStrategies = new Dictionary<SelectionMethodType, Func<List<(int[,], double, double[,])>, ((int[,], double, double[,]), (int[,], double, double[,]))>>()
         {
             { SelectionMethodType.Tournament, SelectionTournament },
             { SelectionMethodType.Roulette, SelectionRoulette }
         };
-        CrossoverStrategies = new Dictionary<CrossoverMethodType, Func<int[,], int[,], int[,]>>()
+        CrossoverStrategies = new Dictionary<CrossoverMethodType, Func<(int[,] map, double[,] fitnessMatrix), (int[,] map, double[,] fitnessMatrix), int[,]>>()
         {
             { CrossoverMethodType.OrderedCrossover, CrossoverOX },
-            { CrossoverMethodType.CycleCrossover, CrossoverCX }
+            { CrossoverMethodType.CycleCrossover, CrossoverCX },
+            { CrossoverMethodType.SwapCrossoverWeighted, CrossoverSwapWeighted }
         };
         MutationStrategies = new Dictionary<MutationMethodType, Func<int[,], int[,]>>()
         {
             { MutationMethodType.Swap, MutationSwap },
-            { MutationMethodType.Inverse, MutationInverse }
+            { MutationMethodType.Inverse, MutationInverse },
+            { MutationMethodType.Random, MutationRandom }
         };
         RepairStrategies = new Dictionary<RepairMethodType, Func<int[,], int[,]>>()
         {
             { RepairMethodType.Whatever1, RepairWhatever1 },
             { RepairMethodType.Whatever2, RepairWhatever2 }
         };
-        CreatingNewGenerationStrategies = new Dictionary<CreatingNewGenerationType, Func<List<(int[,], double)>, List<int[,]>>>()
+        CreatingNewGenerationStrategies = new Dictionary<CreatingNewGenerationType, Func<List<(int[,], double, double[,])>, List<int[,]>>>()
         {
             { CreatingNewGenerationType.Elitism, CreateNewGenerationElitism },
             { CreatingNewGenerationType.NoElitism, CreateNewGenerationNoElitism }
@@ -128,12 +129,44 @@ public class EvolutionaryAlgorithm
     }
     private List<int[,]> InitializeGreedy()
     {
-        throw new NotImplementedException();
+        var population = new List<int[,]>();
+        for (int i = 0; i < PopulationSize; i++)
+        {
+            var individual = new int[MapWidth, MapHeight];
+
+            //(int startX, int startY) = (0, random.Next(MapHeight));
+            //(int endX, int endY) = (MapWidth - 1, random.Next(MapHeight));
+            (int startX, int startY, int endX, int endY) = MapUtils.GetRandomStartEndCoordinates(MapWidth, MapHeight);
+
+            List<(int, int)> trail = MapUtils.GenerateTrail(startX, startY, endX, endY, MapWidth, MapHeight);
+
+            for (int y = 0; y < MapHeight; y++)
+            {
+                for (int x = 0; x < MapWidth; x++)
+                {
+                    if (trail.Contains((x, y)))
+                    {
+                        individual[x, y] = MapUtils.PATH_TILE;
+                    }
+                    else
+                    {
+                        individual[x, y] = random.Next(1, 4);
+                    }
+                }
+            }
+            //MapUtils.PrintMap(individual);
+            //Console.WriteLine("\n - - - -\n\n");
+
+            population.Add(individual);
+        }
+
+
+        return population;
     }
 
-    private ((int[,], double), (int[,], double)) SelectionTournament(List<(int[,], double)> population)
+    private ((int[,], double, double[,]), (int[,], double, double[,])) SelectionTournament(List<(int[,], double, double[,])> population)
     {
-        List<(int[,], double)> candidates = new();
+        List<(int[,] map, double fitnessValue, double[,] fitnessMatrix)> candidates = new();
         for (int i = 0; i < TournamentSize * 2; i++)
         {
             int randomIndex = random.Next(PopulationSize);
@@ -142,26 +175,27 @@ public class EvolutionaryAlgorithm
 
         var firstHalf = candidates
             .Take(TournamentSize)
-            .OrderByDescending(x => x.Item2)
+            .OrderByDescending(x => x.fitnessValue)
             .ToList();
         var secondHalf = candidates
             .Skip(TournamentSize)
             .Take(TournamentSize)
-            .OrderByDescending(x => x.Item2)
+            .OrderByDescending(x => x.fitnessValue)
             .ToList();
 
         return (firstHalf.First(), secondHalf.First());
     }
 
-    private ((int[,], double), (int[,], double)) SelectionRoulette(List<(int[,], double)> population)
+    private ((int[,], double, double[,]), (int[,], double, double[,])) SelectionRoulette(List<(int[,] map, double fitnessValue, double[,] fitnessMatrix)> population)
     {
-        double totalFitness = population.Sum(ind => ind.Item2);
+        double totalFitness = population.Sum(ind => ind.fitnessValue);
 
-        var probabilities = population
-            .Select(ind => ind.Item2 / totalFitness)
+        var probabilities = (totalFitness == 0 ?
+            population.Select(ind => 1.0 / PopulationSize) :
+            population.Select(ind => ind.fitnessValue / totalFitness))
             .ToList();
 
-        (int[,], double) SelectIndividual()
+        (int[,], double, double[,]) SelectIndividual()
         {
             double randomValue = random.NextDouble();
             double sum = 0.0;
@@ -176,15 +210,15 @@ public class EvolutionaryAlgorithm
             return population.Last();
         }
 
-        (int[,], double) parent1 = SelectIndividual();
-        (int[,], double) parent2 = SelectIndividual();
+        (int[,], double, double[,]) parent1 = SelectIndividual();
+        (int[,], double, double[,]) parent2 = SelectIndividual();
         return (parent1, parent2);
     }
 
-    private int[,] CrossoverOX(int[,] parent1, int[,] parent2)
+    private int[,] CrossoverOX((int[,] map, double[,] fitnessMatrix) parent1, (int[,] map, double[,] fitnessMatrix) parent2)
     {
         // every part of the genotype that is not from the random segment is taken from parent2
-        int[,] child = (int[,])parent2.Clone();
+        int[,] child = (int[,])parent2.map.Clone();
 
         // select random segment within the matrix
         int[] indiciesX = Enumerable
@@ -208,14 +242,14 @@ public class EvolutionaryAlgorithm
         {
             for (int x = startX; x <= endX; x++)
             {
-                child[y, x] = parent1[y, x];
+                child[y, x] = parent1.map[y, x];
             }
         }
 
         return child;
     }
 
-    private int[,] CrossoverCX(int[,] parent1, int[,] parent2)
+    private int[,] CrossoverCX((int[,] map, double[,] fitnessMatrix) parent1, (int[,] map, double[,] fitnessMatrix) parent2)
     {
         int[,] child = new int[MapHeight, MapWidth];
         for (int y = 0; y < MapHeight; y++)
@@ -242,12 +276,12 @@ public class EvolutionaryAlgorithm
                 do
                 {
                     // Copy value from parent1
-                    child[currentY, currentX] = parent1[currentY, currentX];
+                    child[currentY, currentX] = parent1.map[currentY, currentX];
                     visited[currentY, currentX] = true;
 
                     // Find the next position in the cycle using parent2
-                    int valueToFind = parent1[currentY, currentX];
-                    (int nextY, int nextX) = MapUtils.FindValuePosition(parent2, valueToFind);
+                    int valueToFind = parent1.map[currentY, currentX];
+                    (int nextY, int nextX) = MapUtils.FindValuePosition(parent2.map, valueToFind);
 
                     // Move to the next position
                     currentX = nextX;
@@ -264,10 +298,25 @@ public class EvolutionaryAlgorithm
             {
                 if (child[y, x] == -1)
                 {
-                    child[y, x] = parent2[y, x];
+                    child[y, x] = parent2.map[y, x];
                 }
             }
         }
+
+        return child;
+    }
+
+    private int[,] CrossoverSwapWeighted((int[,] map, double[,] fitnessMatrix) parent1, (int[,] map, double[,] fitnessMatrix) parent2)
+    {
+        int[,] child = (int[,])parent2.map.Clone();
+
+        (int parent1X, int parent1Y) = MapUtils.SelectIndexWeightedPromoteHighFitness(parent1.fitnessMatrix); // this is the region to be inserted into the child, so I want it to be good
+        (int parent2X, int parent2Y) = MapUtils.SelectIndexWeightedPromoteLowFitness(parent2.fitnessMatrix);  // this is the region to be replaced, so I want it it be garbage
+
+        // Extract kernel regions from parent 1 (to be inserted into the child)
+        int[,] segmentFromParent1 = MapUtils.ExtractKernelRegion(parent1.map, parent1X, parent1Y, KernelSize);
+
+        MapUtils.InsertKernelRegion(child, parent2X, parent2Y, segmentFromParent1);
 
         return child;
     }
@@ -297,6 +346,39 @@ public class EvolutionaryAlgorithm
         return newIndividual;
     }
 
+    private int[,] MutationRandom(int[,] individual)
+    {
+        if (random.NextDouble() >= MutationRate)
+        {
+            return individual;
+        }
+        var newIndividual = (int[,])individual.Clone();
+
+        int x = random.Next(0, MapWidth);
+        int y = random.Next(0, MapHeight);
+
+        int[,] region = MapUtils.ExtractKernelRegion(individual, x, y, KernelSize);
+        int[,] mutatedRegion = MutateKernelRegion(region);
+
+        MapUtils.InsertKernelRegion(newIndividual, x, y, mutatedRegion);
+
+        return newIndividual;
+    }
+
+    private int[,] MutateKernelRegion(int[,] region)
+    {
+        int[,] mutatedRegion = (int[,])region.Clone();
+        for (int y = 0; y < KernelSize; y++)
+        {
+            for (int x = 0; x < KernelSize; x++)
+            {
+                mutatedRegion[y, x] = random.Next(0, 4);
+            }
+        }
+        return mutatedRegion;
+    }
+
+
     private int[,] MutationInverse(int[,] individual)
     {
         if (random.NextDouble() >= MutationRate)
@@ -312,7 +394,7 @@ public class EvolutionaryAlgorithm
         int stepY = random.Next(1, MapHeight - startY + 1);
 
         int subMatrixSize = stepX * stepY;
-        List<int> subMatrixValues = new List<int>(subMatrixSize);
+        List<int> subMatrixValues = new();
 
         for (int i = 0; i < subMatrixSize; i++)
         {
@@ -340,7 +422,7 @@ public class EvolutionaryAlgorithm
         throw new NotImplementedException();
     }
 
-    private double Fitness(int[,] matrix)
+    private (double, double[,]) Fitness(int[,] matrix)
     {
         double[,] fitnessMatrix = new double[MapHeight, MapWidth];
         double totalFitness = 0.0;
@@ -349,7 +431,7 @@ public class EvolutionaryAlgorithm
         {
             for (int x = 0; x < MapWidth; x++)
             {
-                int[,] region = MapUtils.ExtractKernelRegion(matrix, x, y, 3);
+                int[,] region = MapUtils.ExtractKernelRegion(matrix, x, y, KernelSize);
 
                 double regionFitness = CalculateRegionFitness(region);
                 fitnessMatrix[y, x] = regionFitness;
@@ -357,29 +439,12 @@ public class EvolutionaryAlgorithm
             }
         }
 
-        //Console.WriteLine("Map:");
-        //MapUtils.PrintMap(matrix);
-        //Console.WriteLine();
-        //double sum = fitnessMatrix.Cast<double>().Sum();
-        //Console.WriteLine("Fitness matrix sum: {0}", sum);
-        //for (int i = 0; i < fitnessMatrix.GetLength(0); i++)
-        //{
-        //    for (int j = 0; j < fitnessMatrix.GetLength(1); j++)
-        //    {
-        //        //string description = GetTileDescription(map[i, j]);
-        //        string description = fitnessMatrix[i, j].ToString();
-        //        Console.Write(description.PadRight(5));
-        //    }
-        //    Console.WriteLine();
-        //}
-
-        //totalFitness += EvaluateTileRatios(matrix);
         var (tileRatioPromotionFitness, availableTilesOnBorder) = EvaluateTileRatios(matrix);
         totalFitness += tileRatioPromotionFitness;
         totalFitness -= PenalizeSoloTiles(matrix);
         totalFitness -= PenalizeAvailableRegionsOnTheBorder(matrix, availableTilesOnBorder, 1);
         totalFitness -= PenalizeTooManyInOutPaths(matrix);
-        return totalFitness;
+        return (totalFitness, fitnessMatrix);
     }
 
     private double CalculateRegionFitness(int[,] region)
@@ -579,66 +644,60 @@ public class EvolutionaryAlgorithm
         return (pathsOnBorder - 2.0);
     }
 
-    private List<(int[,], double)> EvaluatePopulation(List<int[,]> population)
+    private List<(int[,], double, double[,])> EvaluatePopulation(List<int[,]> population)
     {
-        List<(int[,], double)> EvaluatedPopulation = new();
+        List<(int[,], double, double[,])> EvaluatedPopulation = new();
         foreach (int[,] individual in population)
         {
-            var IndividualScore = Fitness(individual);
-            EvaluatedPopulation.Add((individual, IndividualScore));
+            var (IndividualScore, IndividualFitnessMatrix) = Fitness(individual);
+            EvaluatedPopulation.Add((individual, IndividualScore, IndividualFitnessMatrix));
         }
         return EvaluatedPopulation;
     }
 
-    private List<int[,]> CreateNewGenerationNoElitism(List<(int[,], double)> population)
+    private List<int[,]> CreateNewGenerationNoElitism(List<(int[,], double, double[,])> population)
     {
-        List<int[,]> NewPopulation = new();
+        List<int[,]> newPopulation = new();
 
         for (int i = 0; i < PopulationSize; i++)
         {
             var (Parent1, Parent2) = SelectionStrategies[SelectionMethod](population);
 
-            var Child = CrossoverStrategies[CrossoverMethod](Parent1.Item1, Parent2.Item1);
+            var Child = CrossoverStrategies[CrossoverMethod]((Parent1.Item1, Parent1.Item3), (Parent2.Item1, Parent2.Item3));
 
             if (random.NextDouble() < MutationRate)
             {
                 Child = MutationStrategies[MutationMethod](Child);
             }
 
-            NewPopulation.Add(RepairStrategies[RepairMethod](Child));
+            newPopulation.Add(RepairStrategies[RepairMethod](Child));
         }
-        return NewPopulation;
+        return newPopulation;
     }
 
-    private List<int[,]> CreateNewGenerationElitism(List<(int[,], double)> population)
+    private List<int[,]> CreateNewGenerationElitism(List<(int[,] map, double fitnessValue, double[,] fitnessMatrix)> population)
     {
-        var SortedPopulation = population
-            .OrderByDescending(x => x.Item2)
-            .ToList();
-        int numElites = (int)(PopulationSize * 0.05);
-        //List<int[,]> NewPopulation = SortedPopulation
-        //    .Take(numElites)
-        //    .Select(ind => ind.Item1)
-        //    .ToList();
-        List<int[,]> NewPopulation = SortedPopulation
+        int numElites = (int)(PopulationSize * ElitesPercentage);
+        List<int[,]> newPopulation = population
+            .OrderByDescending(x => x.fitnessValue)
             .Take(numElites)
-            .Select(ind => (int[,])ind.Item1.Clone())
+            .Select(ind => ind.map)
             .ToList();
 
         for (int i = 0; i < PopulationSize; i++)
         {
             var (Parent1, Parent2) = SelectionStrategies[SelectionMethod](population);
 
-            var Child = CrossoverStrategies[CrossoverMethod](Parent1.Item1, Parent2.Item1);
+            var Child = CrossoverStrategies[CrossoverMethod]((Parent1.Item1, Parent1.Item3), (Parent2.Item1, Parent2.Item3));
 
             if (random.NextDouble() < MutationRate)
             {
                 Child = MutationStrategies[MutationMethod](Child);
             }
 
-            NewPopulation.Add(RepairStrategies[RepairMethod](Child));
+            newPopulation.Add(RepairStrategies[RepairMethod](Child));
         }
-        return NewPopulation;
+        return newPopulation;
     }
 
     public void Run()
@@ -651,7 +710,7 @@ public class EvolutionaryAlgorithm
         sw.Start();
         for (int generation = 0; generation < MaxGenerations; generation++)
         {
-            List<(int[,], double)> EvaluatedPopulation = EvaluatePopulation(Population);
+            List<(int[,], double, double[,])> EvaluatedPopulation = EvaluatePopulation(Population);
 
             var BestIndividual = EvaluatedPopulation.OrderByDescending(x => x.Item2).First();
             BestIndividualValues.Add(BestIndividual.Item1);
@@ -677,15 +736,15 @@ public class EvolutionaryAlgorithm
     public static (MapParameters, StopConditionParameters, AlgorithmParameters, MethodSelectionParameters) GetParameters()
     {
         //  whatever as default, it's just a starting point
-        return (new MapParameters { Width = 10, Height = 10 },
+        return (new MapParameters { Width = 10, Height = 10, KernelSize = 3 },
                 new StopConditionParameters { MaxGenerations = 999999, TimeLimit = 60 },
-                new AlgorithmParameters { PopulationSize = 500, MutationRate = 0.2, TournamentSize = 2 },
+                new AlgorithmParameters { PopulationSize = 500, MutationRate = 0.2, TournamentSize = 2, ElitesPercentage = 0.05 },
                 new MethodSelectionParameters
                 {
                     InitializationMethod = InitializationMethodType.Random,
                     SelectionMethod = SelectionMethodType.Tournament,
-                    CrossoverMethod = CrossoverMethodType.CycleCrossover,
-                    MutationMethod = MutationMethodType.Inverse,
+                    CrossoverMethod = CrossoverMethodType.OrderedCrossover,
+                    MutationMethod = MutationMethodType.Swap,
                     RepairMethod = RepairMethodType.Whatever1,
                     CreatorMethod = CreatingNewGenerationType.Elitism
                 }
@@ -698,6 +757,8 @@ public class EvolutionaryAlgorithm
 
         var generator = new EvolutionaryAlgorithm(mapParams, stopParams, algParams, metParams);
         generator.Run();
+        //var x = generator.InitializeGreedy();
+
     }
 
 }

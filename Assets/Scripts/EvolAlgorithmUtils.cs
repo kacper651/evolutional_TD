@@ -20,11 +20,13 @@ namespace EvolutionaryAlgorithmUtils
     {
         OrderedCrossover,
         CycleCrossover,
+        SwapCrossoverWeighted
     }
     public enum MutationMethodType
     {
         Swap,
         Inverse,
+        Random
     }
     public enum RepairMethodType
     {
@@ -41,6 +43,7 @@ namespace EvolutionaryAlgorithmUtils
     {
         public int Width;
         public int Height;
+        public int KernelSize;
     }
     public struct StopConditionParameters
     {
@@ -52,6 +55,7 @@ namespace EvolutionaryAlgorithmUtils
         public int PopulationSize;
         public double MutationRate;
         public int TournamentSize;
+        public double ElitesPercentage;
     }
     public struct MethodSelectionParameters
     {
@@ -297,5 +301,220 @@ namespace EvolutionaryAlgorithmUtils
             return false;
         }
 
+        public static (int startX, int startY, int endX, int endY) GetRandomStartEndCoordinates(int MapWidth, int MapHeight)
+        {
+            Random random = new();
+            // Sides of the rectangle: 0 = top, 1 = bottom, 2 = left, 3 = right
+            int startSide = random.Next(4);
+            int endSide;
+
+            do
+            {
+                endSide = random.Next(4);
+            } while (endSide == startSide);
+
+            Console.WriteLine("Start side: {0} | End side: {1}", startSide, endSide);
+
+            int startX, startY;
+            switch (startSide)
+            {
+                case 0: // Top
+                    startX = random.Next(1, MapWidth - 2);
+                    startY = 0;
+                    break;
+                case 1: // Bottom
+                    startX = random.Next(1, MapWidth - 2);
+                    startY = MapHeight - 1;
+                    break;
+                case 2: // Left
+                    startX = 0;
+                    startY = random.Next(1, MapHeight - 2);
+                    break;
+                case 3: // Right
+                    startX = MapWidth - 1;
+                    startY = random.Next(1, MapHeight - 2);
+                    break;
+                default:
+                    throw new InvalidOperationException("Invalid start side");
+            }
+
+            int endX, endY;
+            switch (endSide)
+            {
+                case 0: // Top
+                    endX = random.Next(1, MapWidth - 2);
+                    endY = 0;
+                    break;
+                case 1: // Bottom
+                    endX = random.Next(MapWidth);
+                    endY = MapHeight - 1;
+                    break;
+                case 2: // Left
+                    endX = 0;
+                    endY = random.Next(1, MapHeight - 2);
+                    break;
+                case 3: // Right
+                    endX = MapWidth - 1;
+                    endY = random.Next(1, MapHeight - 2);
+                    break;
+                default:
+                    throw new InvalidOperationException("Invalid end side");
+            }
+
+            return (startX, startY, endX, endY);
+        }
+
+        public static List<(int, int)> GenerateTrail(int startX, int startY, int endX, int endY, int MapWidth, int MapHeight)
+        {
+            List<(int, int)> trail = new();
+            Random random = new();
+
+            int currentX = startX;
+            int currentY = startY;
+
+            trail.Add((currentX, currentY));
+
+            //Console.WriteLine($"\nStart: ({currentX}, {currentY}), End: ({endX}, {endY})\n");
+
+            while (currentX != endX || currentY != endY)
+            {
+                List<(int dx, int dy)> moves = new();
+                if (currentX < endX) moves.Add((1, 0)); // Move right
+                if (currentX > endX) moves.Add((-1, 0)); // Move left
+                if (currentY < endY) moves.Add((0, 1)); // Move down
+                if (currentY > endY) moves.Add((0, -1)); // Move up
+
+                if (random.NextDouble() < 0.3)
+                {
+                    if (currentY > 1) moves.Add((0, -1)); // Move up
+                    if (currentY < MapHeight - 2) moves.Add((0, 1)); // Move down
+                    if (currentX > 1) moves.Add((-1, 0)); // Move left
+                    if (currentX < MapWidth - 2) moves.Add((1, 0)); // Move right
+                }
+
+                if (moves.Count == 0)
+                {
+                    break;
+                }
+
+                var (dx, dy) = moves[random.Next(moves.Count)];
+
+                currentX += dx;
+                currentY += dy;
+
+                currentX = Math.Clamp(currentX, 0, MapWidth - 1);
+                currentY = Math.Clamp(currentY, 0, MapHeight - 1);
+
+                if (!trail.Contains((currentX, currentY)))
+                {
+                    trail.Add((currentX, currentY));
+                }
+            }
+
+            return trail;
+        }
+
+        public static ((int x1, int y1), (int x2, int y2)) SelectTwoWeightedRandom(double[,] fitnessMatrix)
+        {
+            Random random = new();
+            List<(int x, int y, double weight)> weightedElements = new();
+            double totalWeight = 0.0;
+
+            for (int y = 0; y < fitnessMatrix.GetLength(0); y++)
+            {
+                for (int x = 0; x < fitnessMatrix.GetLength(1); x++)
+                {
+                    double fitness = fitnessMatrix[y, x];
+                    double weight = fitness <= 0 ? 0.0 : (1.0 / fitness);
+                    weightedElements.Add((x, y, weight));
+                    totalWeight += weight;
+                }
+            }
+
+            (int x, int y) SelectRandomElement()
+            {
+                double randomValue = random.NextDouble() * totalWeight;
+                double currentWeight = 0.0;
+
+                foreach (var element in weightedElements)
+                {
+                    currentWeight += element.weight;
+                    if (currentWeight >= randomValue)
+                    {
+                        return (element.x, element.y);
+                    }
+                }
+                return (weightedElements.Last().x, weightedElements.Last().y);
+            }
+
+            var firstElement = SelectRandomElement();
+            var secondElement = SelectRandomElement();
+
+            return (firstElement, secondElement);
+        }
+
+        public static void InsertKernelRegion(int[,] map, int centerX, int centerY, int[,] kernelRegion)
+        {
+            int kernelSize = kernelRegion.GetLength(0);
+            int offset = kernelSize / 2;
+
+            for (int ky = -offset; ky <= offset; ky++)
+            {
+                for (int kx = -offset; kx <= offset; kx++)
+                {
+                    int x = centerX + kx;
+                    int y = centerY + ky;
+
+                    if (x >= 0 && x < map.GetLength(1) && y >= 0 && y < map.GetLength(0) && kernelRegion[ky + offset, kx + offset] != -1)
+                    {
+                        map[y, x] = kernelRegion[ky + offset, kx + offset];
+                    }
+                }
+            }
+        }
+
+        public static (int x, int y) SelectIndexWeightedPromoteLowFitness(double[,] fitnessMatrix)
+        {
+            Random random = new();
+            var flatFitness = fitnessMatrix.Cast<double>().ToArray();
+            double totalFitness = flatFitness.Sum();
+            var probabilities = flatFitness.Select(fitness => 1.0 - (fitness / totalFitness)).ToArray();
+            double randomValue = random.NextDouble() * probabilities.Sum();
+
+            double cumulativeProbability = 0;
+            for (int i = 0; i < probabilities.Length; i++)
+            {
+                cumulativeProbability += probabilities[i];
+                if (randomValue <= cumulativeProbability)
+                {
+                    int x = i % fitnessMatrix.GetLength(1);
+                    int y = i / fitnessMatrix.GetLength(0);
+                    return (x, y);
+                }
+            }
+            return (0, 0); // Fallback, should not reach here
+        }
+
+        public static (int x, int y) SelectIndexWeightedPromoteHighFitness(double[,] fitnessMatrix)
+        {
+            Random random = new();
+            var flatFitness = fitnessMatrix.Cast<double>().ToArray();
+            double totalFitness = flatFitness.Sum();
+            var probabilities = flatFitness.Select(fitness => fitness / totalFitness).ToArray();
+            double randomValue = random.NextDouble() * probabilities.Sum();
+
+            double cumulativeProbability = 0;
+            for (int i = 0; i < probabilities.Length; i++)
+            {
+                cumulativeProbability += probabilities[i];
+                if (randomValue <= cumulativeProbability)
+                {
+                    int x = i % fitnessMatrix.GetLength(1);
+                    int y = i / fitnessMatrix.GetLength(0);
+                    return (x, y);
+                }
+            }
+            return (0, 0); // Fallback, should not reach here
+        }
     }
 }
