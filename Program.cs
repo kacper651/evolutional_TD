@@ -1,6 +1,3 @@
-using System.Drawing.Drawing2D;
-using EvolAlgorithm.Utils;
-
 namespace evolutional_TD;
 
 static class Program
@@ -15,11 +12,12 @@ static class Program
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
 
-        var (mapParams, stopParams, algParams, metParams, poolParams) = Utils.GetParameters();
-        var generator = new EvolutionaryAlgorithm(mapParams, stopParams, algParams, metParams, poolParams);
-
+        var (mapParams, stopParams, algParams, metParams) = EvolutionaryAlgorithm.GetParameters();
+        var generator = new EvolutionaryAlgorithm(mapParams, stopParams, algParams, metParams);
         generator.Run();
+
         var matrix = generator.Population.Last();
+
         Application.Run(new Visualizer(matrix));
-    }
+    }    
 }
