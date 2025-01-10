@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Threading;
 using Random = System.Random;
 using EvolutionaryAlgorithmUtils;
+using MapRepairer;
 
 /*
  * TODO: 
@@ -100,8 +101,8 @@ public class EvolutionaryAlgorithm
         };
         RepairStrategies = new Dictionary<RepairMethodType, Func<int[,], int[,]>>()
         {
-            { RepairMethodType.Whatever1, RepairWhatever1 },
-            { RepairMethodType.Whatever2, RepairWhatever2 }
+            { RepairMethodType.Whatever1, PathRepairer.RepairWhatever1 },
+            { RepairMethodType.Whatever2, PathRepairer.RepairWhatever2 }
         };
         CreatingNewGenerationStrategies = new Dictionary<CreatingNewGenerationType, Func<List<(int[,], double, double[,])>, List<int[,]>>>()
         {
