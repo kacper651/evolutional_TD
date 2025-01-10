@@ -1,0 +1,23 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {
+      "evolutional_TD/1.0.0": {
+        "runtime": {
+          "evolutional_TD.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "evolutional_TD/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
