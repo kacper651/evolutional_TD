@@ -113,7 +113,7 @@ namespace MapRepairer
             // delete border path tiles except of start and stop
             foreach (var item in borderTiles)
             {
-                matrix[item.Row, item.Column] = 1;
+                matrix[item.Row, item.Column] = MapUtils.UNAVAILABLE_GROUND_TILE;
             }
             return startAndStop;
         }
