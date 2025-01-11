@@ -27,9 +27,33 @@ namespace MapRepairer
             }
         }
 
-        private List<Index2D> GetPathTilesOnBorders(int[,] matrix)
+        private static List<T> GetAndPopRandomElements<T>(List<T> list, int count)
+        {
+            if (list == null || count < 1 || count > list.Count)
+                throw new ArgumentException("Invalid list or count");
+
+            Random random = new Random();
+            List<T> randomElements = new List<T>();
+
+            for (int i = 0; i < count; i++)
+            {
+                int randomIndex = random.Next(list.Count);
+
+                randomElements.Add(list[randomIndex]);
+
+                list.RemoveAt(randomIndex);
+            }
+
+            return randomElements;
+        }
+
+        //choose random border path tiles as start and stop, create if needed, another extra path tiles on borders are deleted
+        private static List<Index2D> DeleteExtraPathTilesOnBorder(int[,] matrix)
         {
             var borderTiles = new List<Index2D>();
+
+            int MapHeight = matrix.GetLength(0);
+            int MapWidth = matrix.GetLength(1);
 
             // top border (+ corners)
             for (int x = 0; x < MapWidth; x++)
@@ -66,41 +90,37 @@ namespace MapRepairer
                     borderTiles.Add(new Index2D(y, MapWidth - 1));
                 }
             }
+
+            var startAndStop = new List<Index2D>();
+            if(borderTiles.Count >= 2)
+            {
+                startAndStop = GetAndPopRandomElements(borderTiles, 2);
+            }
+            else
+            {
+                Random random = new Random();
+                int randomIndex = random.Next(MapHeight);
+                var start = new Index2D(0, randomIndex);
+                randomIndex = random.Next(MapHeight);
+                var stop = new Index2D(MapWidth - 1, randomIndex);
+                startAndStop.Add(start);
+                startAndStop.Add(stop);
+            }
             
-            var startAndStop = GetAndPopRandomElements(borderTiles, 2);
             //var start = startAndStop[0]
             //var stop = startAndStop[1]
 
             // delete border path tiles except of start and stop
             foreach (var item in borderTiles)
             {
-                matrix[item.row, item.column] = 1
+                matrix[item.Row, item.Column] = 1;
             }
             return startAndStop;
         }
 
-        static List<T> GetAndPopRandomElements<T>(List<T> list, int count)
-        {
-            if (list == null || count < 1 || count > list.Count)
-                throw new ArgumentException("Invalid list or count");
-
-            Random random = new Random();
-            List<T> randomElements = new List<T>();
-
-            for (int i = 0; i < count; i++)
-            {
-                int randomIndex = random.Next(list.Count);
-
-                randomElements.Add(list[randomIndex]);
-
-                list.RemoveAt(randomIndex);
-            }
-
-            return randomElements;
-        }
-
         public static int[,] RepairWhatever1(int[,] individual)
         {
+            var startAndStop = DeleteExtraPathTilesOnBorder(individual);
             return individual;
         }
 
@@ -108,6 +128,25 @@ namespace MapRepairer
         {
             throw new NotImplementedException();
         }
+
+        public static int[,] TestRepair1()
+        {
+            int[,] array1 = new int[,]
+            {
+                { 3, 0, 0, 1, 1, 0, 1, 3, 0, 1 },
+                { 2, 0, 0, 0, 0, 2, 1, 0, 1, 0 },
+                { 0, 1, 0, 0, 0, 2, 0, 0, 0, 2 },
+                { 3, 2, 2, 0, 0, 0, 1, 1, 2, 2 },
+                { 2, 3, 0, 0, 0, 2, 0, 2, 0, 0 },
+                { 1, 0, 0, 0, 0, 0, 0, 0, 0, 2 },
+                { 0, 0, 1, 0, 0, 0, 3, 1, 0, 3 },
+                { 1, 3, 1, 0, 0, 0, 0, 1, 0, 1 },
+                { 2, 3, 0, 0, 2, 0, 0, 2, 3, 2 },
+                { 0, 3, 1, 3, 2, 3, 2, 1, 3, 1 }
+            };
+
+            return RepairWhatever1(array1);
+        } 
     }
     
 }
