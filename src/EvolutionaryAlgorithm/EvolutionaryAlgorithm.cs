@@ -4,19 +4,8 @@ using System.Linq;
 using System.Diagnostics;
 using System.Threading;
 using Random = System.Random;
-using EvolutionaryAlgorithmUtils;
+using EvolAlgorithm.Utils;
 
-/*
- * TODO: 
- *  -   repair: par� r�nych metod
- *  -   automatyzacja pobierania parametr�w, �eby nie by�y pisane z palca tak jak teraz
- *  -   automatyzacja puszczania eksperyment�w 
- *  -   warstwa prezentacji: UNITY
- */
-
-/*
-    Oceny s� mega nieskalibrowane - OrderedCrossoverWeighted promuje �cie�ki tak bardzo, �e prawie ca�a mapa staje si� �cie�k�, Randomowe mutacje w zasadzie tak samo
- */
 
 public class EvolutionaryAlgorithm
 {
@@ -44,6 +33,15 @@ public class EvolutionaryAlgorithm
     private double MutationRate;
     private double ElitesPercentage;
 
+    private int UnavailableGroundPoolCount;
+    private int WaterPoolCount;
+    private double UnavailableGroundPoolMinArea;
+    private double UnavailableGroundPoolMaxArea;
+    private double WaterPoolMinArea;
+    private double WaterPoolMaxArea;
+    private double PathMinArea;
+    private double PathMaxArea;
+
     private InitializationMethodType InitializationMethod;
     private SelectionMethodType SelectionMethod;
     private CrossoverMethodType CrossoverMethod;
@@ -54,7 +52,8 @@ public class EvolutionaryAlgorithm
     public EvolutionaryAlgorithm(MapParameters mapParams,
                                     StopConditionParameters stopParams,
                                     AlgorithmParameters algParams,
-                                    MethodSelectionParameters metParams)
+                                    MethodSelectionParameters metParams,
+                                    PoolingInitializationParameters poolParams)
     {
         random = new Random();
         MapWidth = mapParams.Width;
@@ -76,10 +75,20 @@ public class EvolutionaryAlgorithm
         RepairMethod = metParams.RepairMethod;
         CreatingNewGenerationMethod = metParams.CreatorMethod;
 
+        UnavailableGroundPoolCount = poolParams.unavailableGroundPoolCount;
+        WaterPoolCount = poolParams.waterPoolCount;
+        UnavailableGroundPoolMinArea = poolParams.unavailableGroundMinArea;
+        UnavailableGroundPoolMaxArea = poolParams.unavailableGroundMaxArea;
+        WaterPoolMinArea = poolParams.waterMinArea;
+        WaterPoolMaxArea = poolParams.waterMaxArea;
+        PathMinArea = poolParams.pathMinArea;
+        PathMaxArea = poolParams.pathMaxArea;
+
         InitializationStrategies = new Dictionary<InitializationMethodType, Func<List<int[,]>>>()
         {
             { InitializationMethodType.Random, InitializeRandom },
-            { InitializationMethodType.Greedy, InitializeGreedy }
+            { InitializationMethodType.Greedy, InitializeGreedy },
+            { InitializationMethodType.Pools, InitializePools }
         };
         SelectionStrategies = new Dictionary<SelectionMethodType, Func<List<(int[,], double, double[,])>, ((int[,], double, double[,]), (int[,], double, double[,]))>>()
         {
@@ -90,7 +99,8 @@ public class EvolutionaryAlgorithm
         {
             { CrossoverMethodType.OrderedCrossover, CrossoverOX },
             { CrossoverMethodType.CycleCrossover, CrossoverCX },
-            { CrossoverMethodType.SwapCrossoverWeighted, CrossoverSwapWeighted }
+            { CrossoverMethodType.SwapCrossoverWeighted, CrossoverSwapWeighted },
+            { CrossoverMethodType.CrossoverOverlayPools, CrossoverOverlayPools }
         };
         MutationStrategies = new Dictionary<MutationMethodType, Func<int[,], int[,]>>()
         {
@@ -127,6 +137,7 @@ public class EvolutionaryAlgorithm
         }
         return population;
     }
+
     private List<int[,]> InitializeGreedy()
     {
         var population = new List<int[,]>();
@@ -136,9 +147,9 @@ public class EvolutionaryAlgorithm
 
             //(int startX, int startY) = (0, random.Next(MapHeight));
             //(int endX, int endY) = (MapWidth - 1, random.Next(MapHeight));
-            (int startX, int startY, int endX, int endY) = MapUtils.GetRandomStartEndCoordinates(MapWidth, MapHeight);
+            (int startX, int startY, int endX, int endY) = InitializationUtils.GetRandomStartEndCoordinates(MapWidth, MapHeight);
 
-            List<(int, int)> trail = MapUtils.GenerateTrail(startX, startY, endX, endY, MapWidth, MapHeight);
+            List<(int, int)> trail = InitializationUtils.GenerateTrail(startX, startY, endX, endY, MapWidth, MapHeight);
 
             for (int y = 0; y < MapHeight; y++)
             {
@@ -146,7 +157,7 @@ public class EvolutionaryAlgorithm
                 {
                     if (trail.Contains((x, y)))
                     {
-                        individual[x, y] = MapUtils.PATH_TILE;
+                        individual[x, y] = Constants.PATH_TILE;
                     }
                     else
                     {
@@ -154,12 +165,44 @@ public class EvolutionaryAlgorithm
                     }
                 }
             }
-            //MapUtils.PrintMap(individual);
+            //Utils.PrintMap(individual);
             //Console.WriteLine("\n - - - -\n\n");
 
             population.Add(individual);
         }
 
+
+        return population;
+    }
+
+    private List<int[,]> InitializePools()
+    {
+        var population = new List<int[,]>();
+        for (int i = 0; i < PopulationSize; i++)
+        {
+            var individual = new int[MapWidth, MapHeight];
+
+            (int startX, int startY, int endX, int endY) = InitializationUtils.GetRandomStartEndCoordinates(MapWidth, MapHeight);
+
+            List<(int, int)> trail = InitializationUtils.GenerateTrail(startX, startY, endX, endY, MapWidth, MapHeight);
+
+            for (int y = 0; y < MapHeight; y++)
+            {
+                for (int x = 0; x < MapWidth; x++)
+                {
+                    if (trail.Contains((x, y)))
+                    {
+                        individual[x, y] = Constants.PATH_TILE;
+                    }
+                    else
+                    {
+                        individual[x, y] = -1;
+                    }
+                }
+            }
+            individual = InitializationUtils.InitializePools(individual, UnavailableGroundPoolCount, WaterPoolCount, UnavailableGroundPoolMinArea, UnavailableGroundPoolMaxArea, WaterPoolMinArea, WaterPoolMaxArea);
+            population.Add(individual);
+        }
 
         return population;
     }
@@ -281,7 +324,7 @@ public class EvolutionaryAlgorithm
 
                     // Find the next position in the cycle using parent2
                     int valueToFind = parent1.map[currentY, currentX];
-                    (int nextY, int nextX) = MapUtils.FindValuePosition(parent2.map, valueToFind);
+                    (int nextY, int nextX) = Utils.FindValuePosition(parent2.map, valueToFind);
 
                     // Move to the next position
                     currentX = nextX;
@@ -310,16 +353,38 @@ public class EvolutionaryAlgorithm
     {
         int[,] child = (int[,])parent2.map.Clone();
 
-        (int parent1X, int parent1Y) = MapUtils.SelectIndexWeightedPromoteHighFitness(parent1.fitnessMatrix); // this is the region to be inserted into the child, so I want it to be good
-        (int parent2X, int parent2Y) = MapUtils.SelectIndexWeightedPromoteLowFitness(parent2.fitnessMatrix);  // this is the region to be replaced, so I want it it be garbage
+        (int parent1X, int parent1Y) = Utils.SelectIndexWeightedPromoteHighFitness(parent1.fitnessMatrix); // this is the region to be inserted into the child, so I want it to be good
+        (int parent2X, int parent2Y) = Utils.SelectIndexWeightedPromoteLowFitness(parent2.fitnessMatrix);  // this is the region to be replaced, so I want it it be garbage
 
         // Extract kernel regions from parent 1 (to be inserted into the child)
-        int[,] segmentFromParent1 = MapUtils.ExtractKernelRegion(parent1.map, parent1X, parent1Y, KernelSize);
+        int[,] segmentFromParent1 = Utils.ExtractKernelRegion(parent1.map, parent1X, parent1Y, KernelSize);
 
-        MapUtils.InsertKernelRegion(child, parent2X, parent2Y, segmentFromParent1);
+        Utils.InsertKernelRegion(child, parent2X, parent2Y, segmentFromParent1);
 
         return child;
     }
+
+    private int[,] CrossoverOverlayPools((int[,] map, double[,] fitnessMatrix) parent1, (int[,] map, double[,] fitnessMatrix) parent2)
+    {
+        int[,] child = (int[,])parent2.map.Clone();
+
+        //  extract a pool from parent1
+        //(int startX1, int startY1) = Utils.SelectIndexWeightedPromoteHighFitness(parent1.fitnessMatrix);  //  weighted alternative
+        int startX1 = random.Next(0, MapWidth);
+        int startY1 = random.Next(0, MapHeight);
+
+        int tileType = parent1.map[startY1, startX1];
+        List<(int x, int y)> poolFromParent1 = Utils.ExtractPool(parent1.map, startX1, startY1, tileType);
+
+        //  overlay the pool from parent1 onto the child's map
+        foreach (var (x, y) in poolFromParent1)
+        {
+            child[y, x] = tileType;
+        }
+
+        return child;
+    }
+
 
     private int[,] MutationSwap(int[,] individual)
     {
@@ -357,10 +422,10 @@ public class EvolutionaryAlgorithm
         int x = random.Next(0, MapWidth);
         int y = random.Next(0, MapHeight);
 
-        int[,] region = MapUtils.ExtractKernelRegion(individual, x, y, KernelSize);
+        int[,] region = Utils.ExtractKernelRegion(individual, x, y, KernelSize);
         int[,] mutatedRegion = MutateKernelRegion(region);
 
-        MapUtils.InsertKernelRegion(newIndividual, x, y, mutatedRegion);
+        Utils.InsertKernelRegion(newIndividual, x, y, mutatedRegion);
 
         return newIndividual;
     }
@@ -431,7 +496,7 @@ public class EvolutionaryAlgorithm
         {
             for (int x = 0; x < MapWidth; x++)
             {
-                int[,] region = MapUtils.ExtractKernelRegion(matrix, x, y, KernelSize);
+                int[,] region = Utils.ExtractKernelRegion(matrix, x, y, KernelSize);
 
                 double regionFitness = CalculateRegionFitness(region);
                 fitnessMatrix[y, x] = regionFitness;
@@ -439,11 +504,16 @@ public class EvolutionaryAlgorithm
             }
         }
 
-        var (tileRatioPromotionFitness, availableTilesOnBorder) = EvaluateTileRatios(matrix);
+        var (tileRatioPromotionFitness, availableTilesOnBorder) = FitnessUtils.EvaluateTileRatios(matrix);
         totalFitness += tileRatioPromotionFitness;
-        totalFitness -= PenalizeSoloTiles(matrix);
-        totalFitness -= PenalizeAvailableRegionsOnTheBorder(matrix, availableTilesOnBorder, 1);
-        totalFitness -= PenalizeTooManyInOutPaths(matrix);
+        totalFitness -= FitnessUtils.PenalizeSoloTiles(matrix);
+        totalFitness -= FitnessUtils.PenalizeAvailableRegionsOnTheBorder(matrix, availableTilesOnBorder, 1);
+        totalFitness -= FitnessUtils.PenalizeTooManyInOutPaths(matrix);
+        totalFitness -= FitnessUtils.PenalizeIncorrectPooling(
+            matrix, UnavailableGroundPoolCount, WaterPoolCount,
+            UnavailableGroundPoolMinArea, UnavailableGroundPoolMaxArea, WaterPoolMinArea,
+            WaterPoolMaxArea, PathMinArea, PathMaxArea
+        );
         return (totalFitness, fitnessMatrix);
     }
 
@@ -451,197 +521,10 @@ public class EvolutionaryAlgorithm
     {
         double regionFitness = 0.0;
 
-        regionFitness += EvaluatePathConnectivity(region);    // evaluate path connectivity
-        regionFitness += PromoteL_Shape(region);              // evaluate region 'chunks'
-        //regionFitness -= PenalizeSoloTiles(region);           // penalize single tiles
+        regionFitness += FitnessUtils.EvaluatePathConnectivity(region);    // evaluate path connectivity
+        regionFitness += FitnessUtils.PromoteL_Shape(region);              // evaluate region 'chunks'
 
         return regionFitness;
-    }
-
-    private double EvaluatePathConnectivity(int[,] region)
-    {
-        List<bool> connectedPaths = new();
-        for (int y = 0; y < region.GetLength(0); y++)
-        {
-            for (int x = 0; x < region.GetLength(1); x++)
-            {
-                if (region[y, x] == MapUtils.PATH_TILE)
-                {
-                    connectedPaths.Add(MapUtils.IsConnectedToOtherPathTiles(region, x, y));
-                }
-            }
-        }
-        //Console.WriteLine("EvaluatePathConn\tadded score:\t{0}", connectedPaths.Count(x => x));
-        return connectedPaths.Count(x => x);
-    }
-
-    private double PromoteL_Shape(int[,] region)
-    {
-        return MapUtils.ContainsLShape(region) ? MapUtils.FOUND_L_SHAPE_PROMOTION_WEIGHT : MapUtils.NO_L_SHAPE_PENALTY_WEIGHT;
-    }
-
-    // weights for each ratio can be adjusted
-    private (double, int) EvaluateTileRatios(int[,] map)    // 10 = perfect, even ratio
-    {
-        int totalTiles = MapWidth * MapHeight;
-        int pathTilesCount = 0;
-        int availableGroundTilesCount = 0;
-        int unavailableGroundTilesCount = 0;
-        int waterTilesCount = 0;
-
-        for (int y = 0; y < MapHeight; y++)
-        {
-            for (int x = 0; x < MapWidth; x++)
-            {
-                switch (map[y, x])
-                {
-                    case MapUtils.PATH_TILE:
-                        pathTilesCount++;
-                        break;
-                    case MapUtils.AVAILABLE_GROUND_TILE:
-                        availableGroundTilesCount++;
-                        break;
-                    case MapUtils.UNAVAILABLE_GROUND_TILE:
-                        unavailableGroundTilesCount++;
-                        break;
-                    case MapUtils.WATER_TILE:
-                        waterTilesCount++;
-                        break;
-                }
-            }
-        }
-        double pathToTotalRatio = (double)pathTilesCount / totalTiles;
-        double availableToTotalRatio = (double)availableGroundTilesCount / totalTiles;
-        double unavailableToTotalRatio = (double)(unavailableGroundTilesCount + waterTilesCount) / totalTiles;
-
-        double combinedRatio = MapUtils.WeighTileRatios(pathToTotalRatio, availableToTotalRatio, unavailableToTotalRatio);
-        //Console.WriteLine("EvaluateTileRatios\tadded score:\t{0}", combinedRatio);
-
-        return (combinedRatio, availableGroundTilesCount);
-    }
-
-    // maybe in regards to available tiles ratio?  
-    // availableTilesOnBorder is one thing availableTiles in general is another
-    // we can have 100 on the border, if there are 500 in general, but
-    // if 450 out of 500 are on the border, it's an issue
-    // i can get the total number of available tiles from EvaluateTileRatios method
-    private double PenalizeAvailableRegionsOnTheBorder(int[,] matrix, int totalAvailableCount, int borderSize) // penalty=10 - worst case, all available tiles on the border
-    {
-        int pathTilesCount = 0;
-
-        // top border (+ corners)
-        for (int x = 0; x < MapWidth; x++)
-        {
-            for (int y = 0; y < borderSize; y++)
-            {
-                if (matrix[y, x] == MapUtils.AVAILABLE_GROUND_TILE)
-                {
-                    pathTilesCount++;
-                }
-            }
-        }
-
-        // bottom border (+ corners)
-        for (int x = 0; x < MapWidth; x++)
-        {
-            for (int y = MapHeight - borderSize; y < MapHeight; y++)
-            {
-                if (matrix[y, x] == MapUtils.AVAILABLE_GROUND_TILE)
-                {
-                    pathTilesCount++;
-                }
-            }
-        }
-
-        // left border
-        for (int x = 0; x < borderSize; x++)
-        {
-            for (int y = borderSize; y < MapHeight - borderSize; y++)
-            {
-                if (matrix[y, x] == MapUtils.AVAILABLE_GROUND_TILE)
-                {
-                    pathTilesCount++;
-                }
-            }
-        }
-
-        // right border
-        for (int x = MapWidth - borderSize; x < MapWidth; x++)
-        {
-            for (int y = borderSize; y < MapHeight - borderSize; y++)
-            {
-                if (matrix[y, x] == MapUtils.AVAILABLE_GROUND_TILE)
-                {
-                    pathTilesCount++;
-                }
-            }
-        }
-
-        var ratio = (double)pathTilesCount / totalAvailableCount * MapUtils.AVAILABLE_ON_BORDER_SHIFT_PENALTY_WEIGHT;
-        //Console.WriteLine("PenalizeAvRegOnBor\tpenalty score:\t{0}", ratio);
-        return ratio;
-    }
-
-    private double PenalizeSoloTiles(int[,] region)
-    {
-        double fitnessPenalty = 0.0;
-
-        for (int y = 0; y < region.GetLength(0); y++)
-        {
-            for (int x = 0; x < region.GetLength(1); x++)
-            {
-                int value = region[y, x];
-                if (value != -1 && MapUtils.IsSoloCell(region, x, y, value))
-                {
-                    fitnessPenalty += 1.0;
-                }
-            }
-        }
-        //Console.WriteLine("PenalizeSoloTiles\tpenalty score:\t{0}", fitnessPenalty - 2.0);
-        return fitnessPenalty;
-    }
-
-    private double PenalizeTooManyInOutPaths(int[,] matrix)
-    {
-        double pathsOnBorder = 0.0;
-
-        // top border (+ corners)
-        for (int x = 0; x < MapWidth; x++)
-        {
-            if (matrix[0, x] == MapUtils.PATH_TILE)
-            {
-                pathsOnBorder += 1.0;
-            }
-        }
-
-        // bottom border (+ corners)
-        for (int x = 0; x < MapWidth; x++)
-        {
-            if (matrix[MapHeight - 1, x] == MapUtils.PATH_TILE)
-            {
-                pathsOnBorder += 1.0;
-            }
-        }
-
-        // left border
-        for (int y = 1; y < MapHeight - 1; y++)
-        {
-            if (matrix[y, 0] == MapUtils.PATH_TILE)
-            {
-                pathsOnBorder += 1.0;
-            }
-        }
-
-        // right border
-        for (int y = 1; y < MapHeight - 1; y++)
-        {
-            if (matrix[y, MapWidth - 1] == MapUtils.PATH_TILE)
-            {
-                pathsOnBorder += 1.0;
-            }
-        }
-        //Console.WriteLine("PenalizeSoloTiles\tpenalty score:\t{0}", pathsOnBorder-2.0);
-        return (pathsOnBorder - 2.0);
     }
 
     private List<(int[,], double, double[,])> EvaluatePopulation(List<int[,]> population)
@@ -730,35 +613,7 @@ public class EvolutionaryAlgorithm
         Console.WriteLine("Elapsed={0:F5} seconds", sw.Elapsed.TotalSeconds);
         Console.WriteLine("Best fitness: {0:F5}", BestFitnessValues.Last());
         Console.WriteLine("Worst fitness: {0:F5}", BestFitnessValues.First());
-        MapUtils.PrintMap(Population.Last());
-    }
-
-    public static (MapParameters, StopConditionParameters, AlgorithmParameters, MethodSelectionParameters) GetParameters()
-    {
-        //  whatever as default, it's just a starting point
-        return (new MapParameters { Width = 10, Height = 10, KernelSize = 3 },
-                new StopConditionParameters { MaxGenerations = 10, TimeLimit = 60 },
-                new AlgorithmParameters { PopulationSize = 500, MutationRate = 0.2, TournamentSize = 2, ElitesPercentage = 0.05 },
-                new MethodSelectionParameters
-                {
-                    InitializationMethod = InitializationMethodType.Random,
-                    SelectionMethod = SelectionMethodType.Tournament,
-                    CrossoverMethod = CrossoverMethodType.OrderedCrossover,
-                    MutationMethod = MutationMethodType.Swap,
-                    RepairMethod = RepairMethodType.Whatever1,
-                    CreatorMethod = CreatingNewGenerationType.Elitism
-                }
-            );
-    }
-
-    public static void ExecuteEvolutionaryAlgorithm()
-    {
-        var (mapParams, stopParams, algParams, metParams) = GetParameters();
-
-        var generator = new EvolutionaryAlgorithm(mapParams, stopParams, algParams, metParams);
-        generator.Run();
-        //var x = generator.InitializeGreedy();
-
+        Utils.PrintMap(Population.Last());
     }
 
 }
