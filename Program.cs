@@ -16,11 +16,11 @@ static class Program
 
         var test = PathRepairer.TestRepair1();
 
-        var (mapParams, stopParams, algParams, metParams) = EvolutionaryAlgorithm.GetParameters();
+        /*var (mapParams, stopParams, algParams, metParams) = EvolutionaryAlgorithm.GetParameters();
         var generator = new EvolutionaryAlgorithm(mapParams, stopParams, algParams, metParams);
         generator.Run();
 
-        var matrix = generator.Population.Last();
+        var matrix = generator.Population.Last();*/
 
         Application.Run(new Visualizer(/*matrix*/ test));
     }    
