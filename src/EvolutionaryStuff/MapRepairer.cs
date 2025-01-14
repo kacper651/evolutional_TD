@@ -118,9 +118,57 @@ namespace MapRepairer
             return startAndStop;
         }
 
+        private static int[,] DeleteSoloPathTiles(int[,] matrix)
+        {
+            int MapHeight = matrix.GetLength(0);
+            int MapWidth = matrix.GetLength(1);
+            int count = 0;
+            bool shouldContinue = true;
+            while(shouldContinue)
+            {
+                count = 0;
+                for (int x = 0; x < MapHeight; x++)
+                {
+                    for (int y = 0; y < MapWidth; y++)
+                    {
+                        if (matrix[x, y] == MapUtils.PATH_TILE && CountPathTilesInNeighborhood(matrix, x, y) < 2)
+                        {
+                            matrix[x, y] = MapUtils.AVAILABLE_GROUND_TILE;
+                            count++;
+                        }
+                    }
+                }
+                if(count == 0)
+                {
+                    shouldContinue = false;
+                }
+            }
+                
+            return matrix;
+        }
+
+        public static int CountPathTilesInNeighborhood(int[,] region, int x, int y)
+        {
+            int count = 0;
+            foreach (var (dx, dy) in MapUtils.Directions)
+            {
+                int newX = x + dx;
+                int newY = y + dy;
+                if (newX >= 0 && newX < region.GetLength(1) && newY >= 0 && newY < region.GetLength(0))
+                {
+                    if (region[newY, newX] == 0)
+                    {
+                        count++;
+                    }
+                }
+            }
+            return count;
+        }
+
         public static int[,] RepairWhatever1(int[,] individual)
         {
             var startAndStop = DeleteExtraPathTilesOnBorder(individual);
+            individual = DeleteSoloPathTiles(individual);
             return individual;
         }
 

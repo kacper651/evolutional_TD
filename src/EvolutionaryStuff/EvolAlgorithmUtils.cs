@@ -77,7 +77,7 @@ namespace EvolutionaryAlgorithmUtils
             "Water"
         };
 
-        private static readonly List<(int, int)> Directions = new List<(int, int)>
+        public static readonly List<(int, int)> Directions = new List<(int, int)>
         {
             (-1, 0), // left
             (1, 0),  // right
@@ -96,17 +96,17 @@ namespace EvolutionaryAlgorithmUtils
             {
                 (0, 0), (1, 0), (2, 0), (2, 1), (2, 2)
             },
-            // Rotated 90° clockwise
+            // Rotated 90ï¿½ clockwise
             new List<(int, int)>
             {
                 (0, 0), (0, 1), (0, 2), (1, 0), (2, 0)
             },
-            // Rotated 180° clockwise
+            // Rotated 180ï¿½ clockwise
             new List<(int, int)>
             {
                 (0, 0), (0, 1), (0, 2), (1, 2), (2, 2)
             },
-            // Rotated 270° clockwise
+            // Rotated 270ï¿½ clockwise
             new List<(int, int)>
             {
                 (0, 2), (1, 2), (2, 2), (2, 1), (2, 0)
