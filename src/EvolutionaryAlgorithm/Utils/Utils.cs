@@ -37,6 +37,11 @@ namespace EvolAlgorithm.Utils
                 );
         }
 
+        public static bool IsBetweenZeroAndOne(double value)
+        {
+            return value >= 0.0 && value <= 1.0;
+        }
+
         public static string GetTileDescription(int tileIndex)
         {
             if (tileIndex < 0 || tileIndex >= Constants.TileDescriptions.Length)
