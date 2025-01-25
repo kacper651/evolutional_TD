@@ -1,3 +1,5 @@
+using EvolutionaryAlgorithmUtils;
+
 namespace evolutional_TD;
 
 public partial class Visualizer : Form
@@ -40,10 +42,10 @@ public partial class Visualizer : Form
     {
         return value switch
         {
-            0 => Color.White,
-            1 => Color.Blue,
-            2 => Color.Green,
-            3 => Color.Red,
+            MapUtils.PATH_TILE => Color.White,
+            MapUtils.WATER_TILE => Color.Blue,
+            MapUtils.AVAILABLE_GROUND_TILE => Color.Green,
+            MapUtils.UNAVAILABLE_GROUND_TILE => Color.Red,
             4 => Color.Yellow,
             _ => Color.Gray,
         };
