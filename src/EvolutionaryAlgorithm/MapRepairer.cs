@@ -4,7 +4,7 @@ using System.Linq;
 using System.Diagnostics;
 using System.Threading;
 using Random = System.Random;
-using EvolutionaryAlgorithmUtils;
+using Constants = EvolAlgorithm.Utils.Constants;
 
 namespace MapRepairer 
 {
@@ -58,7 +58,7 @@ namespace MapRepairer
             // top border (+ corners)
             for (int x = 0; x < MapWidth; x++)
             {
-                if (matrix[0, x] == MapUtils.PATH_TILE)
+                if (matrix[0, x] == Constants.PATH_TILE)
                 {
                     borderTiles.Add(new Index2D(0, x));
                 }
@@ -67,7 +67,7 @@ namespace MapRepairer
             // bottom border (+ corners)
             for (int x = 0; x < MapWidth; x++)
             {
-                if (matrix[MapHeight - 1, x] == MapUtils.PATH_TILE)
+                if (matrix[MapHeight - 1, x] == Constants.PATH_TILE)
                 {
                     borderTiles.Add(new Index2D(MapHeight - 1, x));
                 }
@@ -76,7 +76,7 @@ namespace MapRepairer
             // left border
             for (int y = 1; y < MapHeight - 1; y++)
             {
-                if (matrix[y, 0] == MapUtils.PATH_TILE)
+                if (matrix[y, 0] == Constants.PATH_TILE)
                 {
                     borderTiles.Add(new Index2D(y, 0));
                 }
@@ -85,7 +85,7 @@ namespace MapRepairer
             // right border
             for (int y = 1; y < MapHeight - 1; y++)
             {
-                if (matrix[y, MapWidth - 1] == MapUtils.PATH_TILE)
+                if (matrix[y, MapWidth - 1] == Constants.PATH_TILE)
                 {
                     borderTiles.Add(new Index2D(y, MapWidth - 1));
                 }
@@ -113,7 +113,7 @@ namespace MapRepairer
             // delete border path tiles except of start and stop
             foreach (var item in borderTiles)
             {
-                matrix[item.Row, item.Column] = MapUtils.UNAVAILABLE_GROUND_TILE;
+                matrix[item.Row, item.Column] = Constants.UNAVAILABLE_GROUND_TILE;
             }
             return startAndStop;
         }
@@ -131,9 +131,9 @@ namespace MapRepairer
                 {
                     for (int y = 0; y < MapWidth; y++)
                     {
-                        if (matrix[x, y] == MapUtils.PATH_TILE && CountPathTilesInNeighborhood(matrix, x, y) < 2)
+                        if (matrix[x, y] == Constants.PATH_TILE && CountPathTilesInNeighborhood(matrix, x, y) < 2)
                         {
-                            matrix[x, y] = MapUtils.AVAILABLE_GROUND_TILE;
+                            matrix[x, y] = Constants.AVAILABLE_GROUND_TILE;
                             count++;
                         }
                     }
@@ -150,7 +150,7 @@ namespace MapRepairer
         public static int CountPathTilesInNeighborhood(int[,] region, int x, int y)
         {
             int count = 0;
-            foreach (var (dx, dy) in MapUtils.Directions)
+            foreach (var (dx, dy) in Constants.Directions)
             {
                 int newX = x + dx;
                 int newY = y + dy;

@@ -1,4 +1,4 @@
-using EvolutionaryAlgorithmUtils;
+using Constants = EvolAlgorithm.Utils.Constants;
 
 namespace evolutional_TD;
 
@@ -42,10 +42,10 @@ public partial class Visualizer : Form
     {
         return value switch
         {
-            MapUtils.PATH_TILE => Color.White,
-            MapUtils.WATER_TILE => Color.Blue,
-            MapUtils.AVAILABLE_GROUND_TILE => Color.Green,
-            MapUtils.UNAVAILABLE_GROUND_TILE => Color.Red,
+            Constants.PATH_TILE => Color.White,
+            Constants.WATER_TILE => Color.Blue,
+            Constants.AVAILABLE_GROUND_TILE => Color.Green,
+            Constants.UNAVAILABLE_GROUND_TILE => Color.Red,
             4 => Color.Yellow,
             _ => Color.Gray,
         };
