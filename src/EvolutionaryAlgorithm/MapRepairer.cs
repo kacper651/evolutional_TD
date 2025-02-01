@@ -167,9 +167,146 @@ namespace MapRepairer
             return individual;
         }
 
+        public static List<Index2D> FindStandalonePoints(int[,] matrix)
+        {
+            List<Index2D> standalonePoints = new List<Index2D>();
+
+            int MapHeight = matrix.GetLength(0);
+            int MapWidth = matrix.GetLength(1);
+
+            for (int x = 0; x < MapHeight; x++)
+            {
+                for (int y = 0; y < MapWidth; y++)
+                {
+                    if (matrix[x, y] == Constants.PATH_TILE && CountPathTilesInNeighborhood(matrix, x, y) == 0)
+                    {
+                        standalonePoints.Add(new Index2D(x, y));
+                    }
+                }
+            }
+
+            return standalonePoints;
+        } 
+
+        public static int[,] ConnectStandAlonePoints(List<Index2D> standalonePoints, int[,] matrix)
+        {
+            int MapHeight = matrix.GetLength(0);
+            int MapWidth = matrix.GetLength(1);
+
+            foreach (var point in standalonePoints)
+            {
+                int x = point.Row;
+                int y = point.Column;
+
+                int newX = x;
+                int newY = y;
+
+                while (CountPathTilesInNeighborhood(matrix, newX, newY) == 0)
+                {
+                    Random random = new Random();
+                    int randomIndex = random.Next(Constants.Directions.Count);
+                    var (dx, dy) = Constants.Directions[randomIndex];
+
+                    newX = x + dx;
+                    newY = y + dy;
+
+                    if (newX >= 0 && newX < MapWidth && newY >= 0 && newY < MapHeight)
+                    {
+                        if (matrix[newX, newY] == Constants.PATH_TILE)
+                        {
+                            matrix[x, y] = Constants.PATH_TILE;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            return matrix;
+        }
+
+        public static List<Index2D> FindPathTilesOnBorder(int[,] matrix)
+        {
+            List<Index2D> borderTiles = new List<Index2D>();
+
+            int MapHeight = matrix.GetLength(0);
+            int MapWidth = matrix.GetLength(1);
+
+            // top border (+ corners)
+            for (int x = 0; x < MapWidth; x++)
+            {
+                if (matrix[0, x] == Constants.PATH_TILE)
+                {
+                    borderTiles.Add(new Index2D(0, x));
+                }
+            }
+
+            // bottom border (+ corners)
+            for (int x = 0; x < MapWidth; x++)
+            {
+                if (matrix[MapHeight - 1, x] == Constants.PATH_TILE)
+                {
+                    borderTiles.Add(new Index2D(MapHeight - 1, x));
+                }
+            }
+
+            // left border
+            for (int y = 1; y < MapHeight - 1; y++)
+            {
+                if (matrix[y, 0] == Constants.PATH_TILE)
+                {
+                    borderTiles.Add(new Index2D(y, 0));
+                }
+            }
+
+            // right border
+            for (int y = 1; y < MapHeight - 1; y++)
+            {
+                if (matrix[y, MapWidth - 1] == Constants.PATH_TILE)
+                {
+                    borderTiles.Add(new Index2D(y, MapWidth - 1));
+                }
+            }
+
+            return borderTiles;
+        }
+
+        public static int[,] FixBorders(int[,] matrix)
+        {
+            var borderPathTiles = FindPathTilesOnBorder(matrix);
+
+            if (borderPathTiles.Count == 2) return matrix;
+            if (borderPathTiles.Count < 2) 
+            {
+                var random = new Random();
+                List<Index2D> randomPoints = new List<Index2D> { new Index2D(0, random.Next(matrix.GetLength(1))), new Index2D(matrix.GetLength(0) - 1, random.Next(matrix.GetLength(1))) };
+                while (borderPathTiles.Count < 2)
+                {
+                    var randomPoint = randomPoints[random.Next(randomPoints.Count)];
+                    if (!borderPathTiles.Contains(randomPoint))
+                    {
+                        borderPathTiles.Add(randomPoint);
+                    }
+                }
+            }
+            else
+            {
+                while (borderPathTiles.Count > 2)
+                {
+                    var random = new Random();
+                    borderPathTiles.RemoveAt(random.Next(borderPathTiles.Count));
+                }
+            }
+
+            return matrix;
+        }
+
         public static int[,] RepairWhatever2(int[,] individual)
         {
-            throw new NotImplementedException();
+            var standalonePoints = FindStandalonePoints(individual);
+            individual = ConnectStandAlonePoints(standalonePoints, individual);
+            individual = FixBorders(individual);
+
+            return individual;
         }
 
         public static int[,] TestRepair1()
@@ -188,7 +325,7 @@ namespace MapRepairer
                 { 0, 3, 1, 3, 2, 3, 2, 1, 3, 1 }
             };
 
-            return RepairWhatever1(array1);
+            return RepairWhatever2(array1);
         } 
     }
     
