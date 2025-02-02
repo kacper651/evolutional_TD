@@ -1,4 +1,5 @@
 using MapRepairer;
+using EvolAlgorithm.Utils;
 
 namespace evolutional_TD;
 
@@ -14,14 +15,11 @@ static class Program
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
 
-        var test = PathRepairer.TestRepair1();
+        var (mapParams, stopParams, algParams, metParams, poolParams) = Utils.GetParameters();
+        var generator = new EvolutionaryAlgorithm(mapParams, stopParams, algParams, metParams, poolParams);
 
-        /*var (mapParams, stopParams, algParams, metParams) = EvolutionaryAlgorithm.GetParameters();
-        var generator = new EvolutionaryAlgorithm(mapParams, stopParams, algParams, metParams);
         generator.Run();
-
-        var matrix = generator.Population.Last();*/
-
-        Application.Run(new Visualizer(/*matrix*/ test));
+        var matrix = generator.Population.Last();
+        Application.Run(new Visualizer(matrix));
     }    
 }

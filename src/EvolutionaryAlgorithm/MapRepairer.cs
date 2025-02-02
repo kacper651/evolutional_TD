@@ -122,9 +122,9 @@ namespace MapRepairer
             while(shouldContinue)
             {
                 count = 0;
-                for (int x = 0; x < MapHeight; x++)
+                for (int x = 1; x < MapHeight-1; x++)
                 {
-                    for (int y = 0; y < MapWidth; y++)
+                    for (int y = 1; y < MapWidth-1; y++)
                     {
                         if (matrix[x, y] == Constants.PATH_TILE && CountPathTilesInNeighborhood(matrix, x, y) < 2)
                         {

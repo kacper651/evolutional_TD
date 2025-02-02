@@ -477,11 +477,11 @@ public class EvolutionaryAlgorithm
     }
     private int[,] RepairWhatever1(int[,] individual)
     {
-        return individual;
+        return PathRepairer.RepairWhatever1(individual);
     }
     private int[,] RepairWhatever2(int[,] individual)
     {
-        throw new NotImplementedException();
+        return PathRepairer.RepairWhatever2(individual);
     }
 
     private (double, double[,]) Fitness(int[,] matrix)

@@ -13,7 +13,7 @@
                         SelectionMethod = SelectionMethodType.Tournament,
                         CrossoverMethod = CrossoverMethodType.OrderedCrossover,
                         MutationMethod = MutationMethodType.Swap,
-                        RepairMethod = RepairMethodType.Whatever1,
+                        RepairMethod = RepairMethodType.Whatever2,
                         CreatorMethod = CreatingNewGenerationType.Elitism
                     },
                     new PoolingInitializationParameters
